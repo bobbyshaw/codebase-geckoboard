@@ -1,0 +1,2 @@
+RewriteEngine on
+RewriteRule commits/(.*)/(.*) commits.php?account=$1&username=$2
