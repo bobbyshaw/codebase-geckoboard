@@ -22,8 +22,14 @@ $api = $_SERVER['PHP_AUTH_USER'];
 // Init Codebase object with settings
 $codebase = new Codebase($api, $account, $username);
 
-// Get all projects
-$projects = $codebase->getProjects();
+$projects = array();
+if(isset($_GET['project'])) {
+    // Specify project
+    $projects = array($codebase->getProject($_GET['project']));
+} else {
+    // Get all projects
+    $projects = $codebase->getProjects();
+}
 
 $stats = array();
 

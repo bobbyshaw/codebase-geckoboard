@@ -1,2 +1,3 @@
 RewriteEngine on
+RewriteRule commits/(.*)/(.*)/(.*) commits.php?project=$1&account=$2&username=$3
 RewriteRule commits/(.*)/(.*) commits.php?account=$1&username=$2

@@ -20,6 +20,10 @@ class Codebase {
         $url = "projects";
         return $this->makeRequest($url);
     }
+
+    function getProject($project) {
+        return $this->makeRequest($project);
+    }
    
 
     function getRepositories($project) {
