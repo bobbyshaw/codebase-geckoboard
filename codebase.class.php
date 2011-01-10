@@ -17,8 +17,7 @@ class Codebase {
     }
 
     function getProjects() {
-        $url = "projects";
-        return $this->makeRequest($url);
+        return $this->makeRequest("projects");
     }
 
     function getProject($project) {
@@ -27,13 +26,11 @@ class Codebase {
    
 
     function getRepositories($project) {
-        $url = "$project/repositories";
-        return $this->makeRequest($url);
+        return $this->makeRequest("$project/repositories");
     } 
 
     function getCommits($project, $repository, $ref) {
-        $url = "$project/$repository/commits/$ref";
-        return $this->makeRequest($url);
+        return $this->makeRequest("$project/$repository/commits/$ref");
     }
 
     function makeRequest($url) {
@@ -44,6 +41,12 @@ class Codebase {
         curl_setopt($c, CURLOPT_USERPWD, "$this->_account/$this->_username:$this->_apikey");
         curl_setopt($c, CURLOPT_HTTPHEADER, array("Accept: application/xml", "Content-type: application/xml"));
         $result = curl_exec($c);
+
+        // Not much we can do with errors, so don't return them.
+        if (curl_getinfo($c, CURLINFO_HTTP_CODE) == 503) {
+            return array();
+        }
+
         curl_close($c);
         return simplexml_load_string($result);
     }
