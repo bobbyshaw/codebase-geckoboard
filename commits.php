@@ -4,7 +4,6 @@
   * Retrieve latest commits from codebase and output
   * json/xml ready for geckoboard widget.
   */
-
 require_once('codebase.class.php'); 
 require_once('response.class.php');
 
@@ -22,24 +21,15 @@ $api = $_SERVER['PHP_AUTH_USER'];
 // Init Codebase object with settings
 $codebase = new Codebase($api, $account, $username);
 
-$projects = array();
-if(isset($_GET['project'])) {
-    // Specify project
-    $projects = array($codebase->getProject($_GET['project']));
-} else {
-    // Get all projects
-    $projects = $codebase->getProjects();
-}
-
 $stats = array();
 
-// For each project get repositories
-foreach($projects as $project) {
-    $repositories = $codebase->getRepositories($project->permalink);
+// If cached, we can get repository information without making any requests
+if(isCached($account, $username)) {
+    $repositories = readCache($account, $username);
 
     // For each respository, get 20 most recent commits
     foreach($repositories as $repository) {
-        $commits = $codebase->getCommits($project->permalink, 
+        $commits = $codebase->getCommits($repository->project,
             $repository->permalink, $repository->{'last-commit-ref'});
 
         // For each commit, get committer name and count
@@ -51,6 +41,50 @@ foreach($projects as $project) {
             }
         }
     }
+} else {
+
+    $projects = array();
+    if(isset($_GET['project'])) {
+        // Specify project
+        $projects = array($codebase->getProject($_GET['project']));
+    } else {
+        // Get all projects
+        $projects = $codebase->getProjects();
+    }
+
+    // Create list of repos which are then cached.
+    $all_repositories = new SimpleXMLElement("<repos></repos>");
+
+    // For each project get repositories
+    foreach($projects as $project) {
+        $repositories = $codebase->getRepositories($project->permalink);
+
+        // For each respository, get most recent commits
+        foreach($repositories as $repository) {
+            // When reading repos from cache, we need to be able to
+            // tell which project a repo is from.
+            $repository->addChild("project", $project->permalink);
+
+            // Add repo to list of all repos
+            SimpleXMLElement_append($all_repositories, $repository);
+
+            // Get latest 20 commits
+            $commits = $codebase->getCommits($project->permalink, 
+                $repository->permalink, $repository->{'last-commit-ref'});
+
+            // For each commit, get committer name and count
+            foreach ($commits as $commit) {
+                if(isset($stats["{$commit->{'committer-name'}}"])) {
+                    $stats["{$commit->{'committer-name'}}"]++;
+                } else {
+                    $stats["{$commit->{'committer-name'}}"] = 1;
+                }
+            }
+        }
+    }
+
+    // Write to file
+    writeCache($all_repositories, $account, $username);
 }
 
 // Stats in descending order
@@ -80,4 +114,87 @@ function convertToGecko($stats) {
     }
 
     return array('item' => $gecko);
+}
+
+/*
+ * Write repositories to file to save requests next time
+ */
+function writeCache($repositories, $account, $username) {
+    $filename = getCacheFilename($account, $username);
+    $repositories->asXML($filename);
+}
+
+/*
+ * Check if cached file exists.
+ * Cache lasts an hour
+ */
+function isCached($account, $username) {
+    $filename = getCacheFilename($account, $username);
+    if (file_exists($filename)) {
+        // If over an hour old, don't trust it.
+        if (time() - filemtime($filename) > 3600) {
+            return false;
+        } else {
+            return true;
+        } 
+    }
+
+    return false;
+}
+
+/*
+ * If cache file exists, return it unserialized
+ */
+function readCache($account, $username) {
+    if (isCached($account, $username)) {
+        $filename = getCacheFilename($account, $username);
+        return simplexml_load_string(file_get_contents($filename));
+    }
+
+    return false;
+}
+
+/*
+ * Create filename based on request
+ */
+function getCacheFilename($account, $username) {
+    $filename = "cache/";
+    
+    if (isset($_GET['project'])) {
+        $filename .= $_GET['project'] . "-";
+    }
+
+    $filename .= "$account-$username.txt";  
+
+    return $filename;
+}
+
+/*
+ * Add one SimpleXML Object as a child of another
+ * Thanks to kweij at lsg dot nl on 
+ * http://php.net/manual/en/class.simplexmlelement.php
+ */
+function SimpleXMLElement_append($key, $value) {
+   // check class
+   if ((get_class($key) == 'SimpleXMLElement')
+             && (get_class($value) == 'SimpleXMLElement')) {
+       // check if the value is string value / data
+       if (trim((string) $value) == '') {
+           // add element and attributes
+           $element = $key->addChild($value->getName());
+           foreach ($value->attributes() as $attKey => $attValue) {
+               $element->addAttribute($attKey, $attValue);
+           }
+           // add children
+           foreach ($value->children() as $child) {
+               SimpleXMLElement_append($element, $child);
+           }
+       } else {
+           // set the value of this item
+           $element = $key->addChild($value->getName(), trim((string) $value));
+       }
+   } else {
+       // throw an error
+       throw new Exception('Wrong type: expected SimpleXMLElement');
+   }
 }
