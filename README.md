@@ -1,16 +1,24 @@
 # Codebase Integration with Geckoboard
 
-* Author : Tom Robertshaw
+Retrieve information from [Codebase](http://www.codebasehq.com) and construct feed url for [Geckoboard](geckoboard.com). Caches list of repositories with a TTL of 1 hour to try and cut down on the requests made.
 
-## Description
+* Author : Tom Robertshaw (<http://tomrobertshaw.net>)
 
-Retrieve information from [Codebase](http://www.codebasehq.com) and construct feed url for [Geckoboard](geckoboard.com).
+## Configuration
 
-## Functionality 
+Written as a service, there is no config file and all data should be handed through feed url together with API key specified when creating a widget in Geckoboard.
 
-Visit commits/$account/$username for commit statistics from all projects, repositories and branches.  The Codebase API currently returns the latest 20 commits from each.
+## Global Commit Statistics
 
-Visit commits/$project/$account/$username for commits statistics on particular project (N.B. use permalink).
+Visit **commits/$account/$username** for commit statistics from all projects, repositories and branches.  The Codebase API currently returns the latest 20 commits from each.
+
+![Top 3 committers from all projects](http://tomrobertshaw.net/codebase_geckoboard/images/codebase-commits.png)
+
+## Project Commit Statistics
+
+Visit **commits/$project/$account/$username** for commits statistics on particular project (N.B. use permalink).  Again, this limits to 20 most recent commits.
+
+![Top 3 committers from specific project](http://tomrobertshaw.net/codebase_geckoboard/images/codebase-project-commits.png)
 
 ## Creating Geckoboard Custom Widget
 
@@ -24,3 +32,8 @@ Visit commits/$project/$account/$username for commits statistics on particular p
 * Choose reload time (probably does not need to be that often! Recommend 60 mins)
 * Label it.
 * Woo hoo, we're done.
+
+
+## I just want to play
+
+This service is currently hosted at http://tomrobertshaw.net/codebase_geckoboard/ if you want to test it out.
