@@ -25,7 +25,7 @@ $stats = array();
 
 // If cached, we can get repository information without making any requests
 if(isCached($account, $username)) {
-    $repositories = readCache($account, $username);
+    $repositories = readCache($account, $username, $api);
 
     // For each respository, get 20 most recent commits
     foreach($repositories as $repository) {
@@ -84,7 +84,7 @@ if(isCached($account, $username)) {
     }
 
     // Write to file
-    writeCache($all_repositories, $account, $username);
+    writeCache($all_repositories, $account, $username, $api);
 }
 
 // Stats in descending order
@@ -119,9 +119,10 @@ function convertToGecko($stats) {
 /*
  * Write repositories to file to save requests next time
  */
-function writeCache($repositories, $account, $username) {
+function writeCache($repositories, $account, $username, $api) {
     $filename = getCacheFilename($account, $username);
-    $repositories->asXML($filename);
+    //$repositories->asXML($filename);
+    file_put_contents($filename,encrypt($repositories->asXML(), $api));
 }
 
 /*
@@ -145,10 +146,10 @@ function isCached($account, $username) {
 /*
  * If cache file exists, return it unserialized
  */
-function readCache($account, $username) {
+function readCache($account, $username, $api) {
     if (isCached($account, $username)) {
         $filename = getCacheFilename($account, $username);
-        return simplexml_load_string(file_get_contents($filename));
+        return simplexml_load_string(decrypt(file_get_contents($filename), $api));
     }
 
     return false;
@@ -198,3 +199,23 @@ function SimpleXMLElement_append($key, $value) {
        throw new Exception('Wrong type: expected SimpleXMLElement');
    }
 }
+
+/*
+ * Keep cache unreadable from prying eyes that gain access to the server.
+ * Encrypt xml string with api key. Probably overkill.
+ */
+function encrypt($text, $salt) { 
+    return mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $salt, $text, MCRYPT_MODE_ECB,
+        mcrypt_create_iv(
+            mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND));
+} 
+
+/*
+ * Decrypt cache, will only work if correct API key is used
+ */
+function decrypt($text, $salt) { 
+    return mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $salt, $text, MCRYPT_MODE_ECB,
+        mcrypt_create_iv(
+            mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)); 
+} 
+
