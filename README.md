@@ -1,6 +1,6 @@
 # Codebase Integration with Geckoboard
 
-Retrieve information from [Codebase](http://www.codebasehq.com) and construct feed url for [Geckoboard](geckoboard.com). Some caching used to cut down on the number of requests. E.g. For commit statistics, the list of repositories is cached with a TTL of 1 hour.
+Retrieve information from [Codebase](http://www.codebasehq.com/t/w1xzietlf7bit8qd) and construct feed url for [Geckoboard](geckoboard.com). Some caching used to cut down on the number of requests. E.g. For commit statistics, the list of repositories is cached with a TTL of 1 hour.
 
 * Author : Tom Robertshaw (<http://tomrobertshaw.net>)
 
